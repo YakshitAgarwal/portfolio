@@ -25,6 +25,22 @@ export interface ProjectItem {
   tags?: readonly string[];
 }
 
+export interface HackathonItem {
+  name: string;
+  /** What you won, e.g. "1st place" or "Best use of X". */
+  result: string;
+  year?: string;
+  /** Prize or track, e.g. "$5,000" or "DeFi track". */
+  prize?: string;
+  /** What you built. */
+  project?: string;
+  description?: string;
+  /** Event or project page. The hackathon name links here. */
+  href?: string;
+  repo?: string;
+  tags?: readonly string[];
+}
+
 export interface SkillGroup {
   label: string;
   items: readonly string[];
@@ -50,9 +66,14 @@ export interface PortfolioProps {
   availability?: string;
   email?: string;
   links?: readonly ProfileLink[];
+  /** Adds a "Download resume" button. Use "/resume.pdf" and put the file in public/. */
+  resumeUrl?: string;
+  /** File name the browser saves the resume as, e.g. "Your-Name-Resume.pdf". */
+  resumeFileName?: string;
   skills?: readonly SkillGroup[];
   /** Newest first. */
   experience?: readonly ExperienceItem[];
   projects?: readonly ProjectItem[];
+  hackathons?: readonly HackathonItem[];
   education?: readonly EducationItem[];
 }

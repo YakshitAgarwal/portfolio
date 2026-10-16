@@ -63,14 +63,19 @@ export default function Portfolio({
   availability,
   email,
   links = [],
+  resumeUrl,
+  resumeFileName,
   skills = [],
   experience = [],
   projects = [],
+  hackathons = [],
   education = [],
 }: PortfolioProps): ReactElement {
   const blocks = buildChain(experience);
   const head = headHash(name, blocks);
   const mailHref = safeHref(email ? `mailto:${email}` : undefined);
+  const resumeHref = safeHref(resumeUrl);
+  const resumeIsExternal = resumeHref?.startsWith("http") ?? false;
   const profileLinks = links.flatMap<ProfileLink>(({ label, href }) => {
     const safe = safeHref(href);
     return safe ? [{ label, href: safe }] : [];
@@ -79,6 +84,7 @@ export default function Portfolio({
   const nav = [
     { id: "experience", label: "Experience", show: blocks.length > 0 },
     { id: "projects", label: "Projects", show: projects.length > 0 },
+    { id: "hackathons", label: "Hackathons", show: hackathons.length > 0 },
     { id: "skills", label: "Skills", show: skills.length > 0 },
     { id: "education", label: "Education", show: education.length > 0 },
     { id: "contact", label: "Contact", show: mailHref !== undefined },
@@ -121,45 +127,80 @@ export default function Portfolio({
               <p className="hero-role">{role}</p>
               {bio && <p className="hero-bio">{bio}</p>}
               {profileLinks.length > 0 && (
-                <ul className="link-list">
-                  {profileLinks.map(({ label, href }, index) => (
-                    <li key={`${href}-${index}`}>
-                      <Anchor href={href}>{label}</Anchor>
-                    </li>
-                  ))}
-                </ul>
+                <div className="hero-actions">
+                  {profileLinks.length > 0 && (
+                    <ul className="link-list">
+                      {profileLinks.map(({ label, href }, index) => (
+                        <li key={`${href}-${index}`}>
+                          <Anchor href={href}>{label}</Anchor>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               )}
             </div>
 
-            <aside className="head-panel" aria-label="Chain summary">
-              <dl className="stats">
-                <div className="stat">
-                  <dt className="stat-key">head</dt>
-                  <dd className="stat-value hash">
-                    <ScrambleHash value={shortHash(head)} />
-                  </dd>
-                </div>
-                <div className="stat">
-                  <dt className="stat-key">blocks</dt>
-                  <dd className="stat-value">{blocks.length}</dd>
-                </div>
-                {location && (
+            <div className="hero-side">
+              <aside className="head-panel" aria-label="Chain summary">
+                <dl className="stats">
                   <div className="stat">
-                    <dt className="stat-key">location</dt>
-                    <dd className="stat-value">{location}</dd>
-                  </div>
-                )}
-                {availability && (
-                  <div className="stat">
-                    <dt className="stat-key">status</dt>
-                    <dd className="stat-value">
-                      <span className="status-dot" aria-hidden="true" />
-                      {availability}
+                    <dt className="stat-key">head</dt>
+                    <dd className="stat-value hash">
+                      <ScrambleHash value={shortHash(head)} />
                     </dd>
                   </div>
-                )}
-              </dl>
-            </aside>
+                  <div className="stat">
+                    <dt className="stat-key">blocks</dt>
+                    <dd className="stat-value">{blocks.length}</dd>
+                  </div>
+                  {location && (
+                    <div className="stat">
+                      <dt className="stat-key">location</dt>
+                      <dd className="stat-value">{location}</dd>
+                    </div>
+                  )}
+                  {availability && (
+                    <div className="stat">
+                      <dt className="stat-key">status</dt>
+                      <dd className="stat-value">
+                        <span className="status-dot" aria-hidden="true" />
+                        {availability}
+                      </dd>
+                    </div>
+                  )}
+                </dl>
+              </aside>
+
+              {resumeHref && (
+                <a
+                  className="button"
+                  href={resumeHref}
+                  download={resumeFileName ?? ""}
+                  {...(resumeIsExternal
+                    ? { target: "_blank", rel: "noopener noreferrer" }
+                    : {})}
+                >
+                  <svg
+                    className="button-icon"
+                    viewBox="0 0 16 16"
+                    width="16"
+                    height="16"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M8 2v8m0 0L4.5 6.5M8 10l3.5-3.5M3 13h10"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  Download resume
+                </a>
+              )}
+            </div>
           </div>
         </section>
 
@@ -168,7 +209,9 @@ export default function Portfolio({
             <ol className="chain">
               {blocks.map(({ height, entry, prevHash, hash }) => {
                 const companyHref = safeHref(entry.companyUrl);
-                const when = [entry.period, entry.location].filter(Boolean).join(", ");
+                const when = [entry.period, entry.location]
+                  .filter(Boolean)
+                  .join(", ");
                 return (
                   <li key={hash} className="block">
                     <div className="block-meta">
@@ -183,11 +226,17 @@ export default function Portfolio({
                         {entry.role}
                         <span className="block-company">
                           {" at "}
-                          {companyHref ? <Anchor href={companyHref}>{entry.company}</Anchor> : entry.company}
+                          {companyHref ? (
+                            <Anchor href={companyHref}>{entry.company}</Anchor>
+                          ) : (
+                            entry.company
+                          )}
                         </span>
                       </h3>
                       {when && <p className="block-period">{when}</p>}
-                      {entry.summary && <p className="row-text">{entry.summary}</p>}
+                      {entry.summary && (
+                        <p className="row-text">{entry.summary}</p>
+                      )}
                       {entry.highlights && entry.highlights.length > 0 && (
                         <ul className="block-points">
                           {entry.highlights.map((point, index) => (
@@ -220,13 +269,62 @@ export default function Portfolio({
                   <li key={`${project.name}-${index}`} className="row">
                     <div className="row-key">
                       <h3 className="row-title">
-                        {demo ? <Anchor href={demo}>{project.name}</Anchor> : project.name}
+                        {demo ? (
+                          <Anchor href={demo}>{project.name}</Anchor>
+                        ) : (
+                          project.name
+                        )}
                       </h3>
-                      {project.year && <p className="row-meta">{project.year}</p>}
+                      {project.year && (
+                        <p className="row-meta">{project.year}</p>
+                      )}
                     </div>
                     <div className="row-value">
                       <p className="row-text">{project.description}</p>
                       {project.tags && <Tags items={project.tags} />}
+                      {repo && (
+                        <p className="row-links">
+                          <Anchor href={repo}>Source code</Anchor>
+                        </p>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </Section>
+        )}
+
+        {hackathons.length > 0 && (
+          <Section id="hackathons" title="Hackathons">
+            <ul className="rows">
+              {hackathons.map((item, index) => {
+                const eventHref = safeHref(item.href);
+                const repo = safeHref(item.repo);
+                return (
+                  <li key={`${item.name}-${index}`} className="row">
+                    <div className="row-key">
+                      <h3 className="row-title">
+                        {eventHref ? (
+                          <Anchor href={eventHref}>{item.name}</Anchor>
+                        ) : (
+                          item.name
+                        )}
+                      </h3>
+                      {item.year && <p className="row-meta">{item.year}</p>}
+                    </div>
+                    <div className="row-value">
+                      <p className="result">
+                        <span className="result-mark" aria-hidden="true" />
+                        {[item.result, item.prize].filter(Boolean).join(", ")}
+                      </p>
+                      {item.project && (
+                        <p className="row-project">{item.project}</p>
+                      )}
+                      {item.description && (
+                        <p className="row-text">{item.description}</p>
+                      )}
+                      {item.tags && <Tags items={item.tags} />}
                       {repo && (
                         <p className="row-links">
                           <Anchor href={repo}>Source code</Anchor>
@@ -278,9 +376,11 @@ export default function Portfolio({
 
         {mailHref && email && (
           <Section id="contact" title="Contact">
-            <a className="mail" href={mailHref}>
-              {email}
-            </a>
+            <div className="contact">
+              <a className="mail" href={mailHref}>
+                {email}
+              </a>
+            </div>
           </Section>
         )}
       </main>
